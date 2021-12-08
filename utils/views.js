@@ -9,7 +9,7 @@ const viewAll = async (state) => {
 
   const results = await state.db.query(query);
 
-  console.table(results[0]);
+  console.table('All Employees',results[0]);
 };
 
 const viewAllRoles = async (state) => {
@@ -22,7 +22,7 @@ const viewAllRoles = async (state) => {
 
   const results = await state.db.query(query);
 
-  console.table(results[0]);
+  console.table('All Roles',results[0]);
 };
 
 const viewAllDepartments = async (state) => {
@@ -33,7 +33,7 @@ const viewAllDepartments = async (state) => {
 
   const results = await state.db.query(query);
 
-  console.table(results[0]);
+  console.table('All Departments',results[0]);
 };
 
 module.exports = { viewAll, viewAllRoles, viewAllDepartments };

@@ -1,4 +1,3 @@
-const inquirer = require("inquirer");
 const { viewAll, viewAllRoles, viewAllDepartments } = require("./views.js");
 const { addEmployee, addDepartment, addRole } = require("./addEntries");
 const { updateEmployee } = require("./updateEntries");

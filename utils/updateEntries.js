@@ -40,7 +40,7 @@ const updateEmployee = async (state) => {
     `SELECT * FROM employees WHERE id = ${response.id}`
   );
 
-  const employee = employeeQuery[0];
+  const employee = employeeQuery[0][0];
 
   console.log(employee);
 
@@ -56,11 +56,11 @@ const updateEmployee = async (state) => {
     const insertQuery = `UPDATE employees SET 
     first_name = '${response.first || employee.first_name}',
     last_name = '${response.first || employee.last_name}',
-    manager_id = '${manager_id}',
-    role_id = '${role_id || employee.role_id}',
+    manager_id = ${manager_id},
+    role_id = '${role_id || employee.role_id}'
     WHERE id = '${response.id}';`;
 
-    state.db.query(insertQuery);
+    await state.db.query(insertQuery);
   } else {
     console.log(`Employee ID ${response.id} not found.`);
   }

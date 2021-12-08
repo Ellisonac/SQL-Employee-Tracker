@@ -1,10 +1,14 @@
 const getDepartments = async (state) => {
-  let departmentResults = await state.db.query("SELECT id, name FROM departments;");
+  let departmentResults = await state.db.query(
+    "SELECT id, name FROM departments;"
+  );
   state.departmentState = departmentResults[0];
 };
 
 const getRoles = async (state) => {
-  let roleResults = await state.db.query("SELECT id, title FROM roles;");
+  let roleResults = await state.db.query(
+    "SELECT id, title FROM roles;"
+    );
   state.rolesState = roleResults[0];
 };
 
