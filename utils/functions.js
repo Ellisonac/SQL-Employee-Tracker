@@ -1,5 +1,7 @@
+const { getDepartments, getRoles } = require("./stateManager.js");
+const inquirer = require("inquirer");
 
-const viewAll = async () => {
+const viewAll = async (state) => {
   const query = `SELECT 
     e.id, e.first_name, e.last_name, r.title, d.name as departments, r.salary, CONCAT(m.first_name, ' ', m.last_name) as manager
     FROM employees e
@@ -8,12 +10,12 @@ const viewAll = async () => {
     LEFT JOIN employees m ON e.manager_id = m.id
     ORDER BY e.id ASC;`;
 
-  const results = await db.query(query);
+  const results = await state.db.query(query);
 
   console.table(results[0]);
 };
 
-const viewAllRoles = async () => {
+const viewAllRoles = async (state) => {
   const query = `SELECT 
   r.id, r.title, r.salary, d.name as department
   FROM roles r
@@ -21,25 +23,23 @@ const viewAllRoles = async () => {
   ON r.department_id = d.id
   ORDER BY r.id ASC;`;
 
-  const results = await db.query(query);
+  const results = await state.db.query(query);
 
   console.table(results[0]);
-
 };
 
-const viewAllDepartments = async () => {
+const viewAllDepartments = async (state) => {
   const query = `SELECT 
     id, name as departments
     FROM departments
     ORDER BY id ASC;`;
 
-  const results = await db.query(query);
+  const results = await state.db.query(query);
 
   console.table(results[0]);
 };
 
-const addEmployee = async () => {
-
+const addEmployee = async (state) => {
   const questions = [
     {
       type: "input",
@@ -55,30 +55,31 @@ const addEmployee = async () => {
       type: "list",
       name: "title",
       message: "Enter the employee's role",
-      choices: rolesState.map(role => role.title)
+      choices: state.rolesState.map((role) => role.title),
     },
     {
       type: "list",
       name: "manager",
       message: "Select the employee's manager",
-      choices: managersState.map(manager => manager.name)
+      choices: state.managersState.map((manager) => manager.name),
     },
   ];
 
   const response = await inquirer.prompt(questions);
 
-  const role_id = rolesState.filter(role => role.title === response.title)[0].id;
+  const role_id = state.rolesState.filter((role) => role.title === response.title)[0]
+    .id;
 
-  const manager_id = managersState.filter(manager => manager.name === response.manager)[0].id;
+  const manager_id = state.managersState.filter(
+    (manager) => manager.name === response.manager
+  )[0].id;
 
   const insertQuery = `INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${role_id}',${manager_id}) `;
 
-  db.query(insertQuery)
-  
+  state.db.query(insertQuery);
 };
 
-const updateEmployee = async () => {
-
+const updateEmployee = async (state) => {
   const questions = [
     {
       type: "input",
@@ -99,13 +100,13 @@ const updateEmployee = async () => {
       type: "list",
       name: "title",
       message: "Enter the employee's new role",
-      choices: rolesState.map(role => role.title)
+      choices: state.rolesState.map((role) => role.title),
     },
     {
       type: "list",
       name: "manager",
       message: "Select the employee's new manager",
-      choices: managersState.map(manager => manager.name)
+      choices: state.managersState.map((manager) => manager.name),
     },
   ];
 
@@ -113,32 +114,38 @@ const updateEmployee = async () => {
 
   if (!response.id) return;
 
-  const employeeQuery = await db.query(`SELECT * FROM employees WHERE id = ${response.id}`)
+  const employeeQuery = await state.db.query(
+    `SELECT * FROM employees WHERE id = ${response.id}`
+  );
 
   const employee = employeeQuery[0];
 
   console.log(employee);
 
   if (employee) {
-    const role_id = rolesState.filter(role => role.title === response.title)[0].id;
+    const role_id = state.rolesState.filter(
+      (role) => role.title === response.title
+    )[0].id;
 
-    const manager_id = managersState.filter(manager => manager.name === response.manager)[0].id;
-  
+    const manager_id = state.managersState.filter(
+      (manager) => manager.name === response.manager
+    )[0].id;
+
     const insertQuery = `UPDATE employees SET 
     first_name = '${response.first || employee.first_name}',
     last_name = '${response.first || employee.last_name}',
     manager_id = '${manager_id}',
     role_id = '${role_id || employee.role_id}',
     WHERE id = '${response.id}';`;
-  
-    db.query(insertQuery)
+
+    state.db.query(insertQuery);
   } else {
     console.log(`Employee ID ${response.id} not found.`);
   }
   return;
 };
 
-const addRole = async () => {
+const addRole = async (state) => {
   const questions = [
     {
       type: "input",
@@ -154,23 +161,25 @@ const addRole = async () => {
       type: "list",
       name: "dept",
       message: "Enter the role Department",
-      choices: departmentState.map(dept => dept.name)
+      choices: state.departmentState.map((dept) => dept.name),
     },
   ];
 
   const response = await inquirer.prompt(questions);
 
-  const dept_id = departmentState.filter(dept => dept.name === response.dept)[0].id;
+  const dept_id = state.departmentState.filter(
+    (dept) => dept.name === response.dept
+  )[0].id;
 
   const insertQuery = `INSERT INTO roles(title, salary, department_id) VALUES ('${response.title}','${response.salary}','${dept_id}');`;
 
-  db.query(insertQuery);
+  state.db.query(insertQuery);
 
-  getRoles();
+  getRoles(state);
   return;
 };
 
-const addDepartment = async () => {
+const addDepartment = async (state) => {
   const questions = [
     {
       type: "input",
@@ -183,9 +192,9 @@ const addDepartment = async () => {
 
   const insertQuery = `INSERT INTO departments(name) VALUES ('${response.name}');`;
 
-  db.query(insertQuery);
+  state.db.query(insertQuery);
 
-  getDepartments();
+  getDepartments(state);
   return;
 };
 
@@ -197,7 +206,7 @@ const coreLogic = {
   "Update Employee Role": updateEmployee,
   "Add Role": addRole,
   "Add Department": addDepartment,
-  "Quit": "Quit"
+  Quit: "Quit",
 };
 
 module.exports = coreLogic;
