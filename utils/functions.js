@@ -39,6 +39,7 @@ const viewAllDepartments = async (state) => {
   console.table(results[0]);
 };
 
+// Allow users to add employees to the database
 const addEmployee = async (state) => {
   const questions = [
     {
@@ -67,8 +68,9 @@ const addEmployee = async (state) => {
 
   const response = await inquirer.prompt(questions);
 
-  const role_id = state.rolesState.filter((role) => role.title === response.title)[0]
-    .id;
+  const role_id = state.rolesState.filter(
+    (role) => role.title === response.title
+  )[0].id;
 
   const manager_id = state.managersState.filter(
     (manager) => manager.name === response.manager
@@ -79,6 +81,7 @@ const addEmployee = async (state) => {
   state.db.query(insertQuery);
 };
 
+// Allow users to update an employee entries name, role, and manager
 const updateEmployee = async (state) => {
   const questions = [
     {
@@ -145,6 +148,7 @@ const updateEmployee = async (state) => {
   return;
 };
 
+// Allow users to add new roles
 const addRole = async (state) => {
   const questions = [
     {
@@ -179,6 +183,7 @@ const addRole = async (state) => {
   return;
 };
 
+// Allow users to add new departments
 const addDepartment = async (state) => {
   const questions = [
     {
@@ -198,6 +203,7 @@ const addDepartment = async (state) => {
   return;
 };
 
+// Primary object to handle function options
 const coreLogic = {
   "View All Employees": viewAll,
   "View All Roles": viewAllRoles,
