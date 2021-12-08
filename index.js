@@ -1,6 +1,7 @@
 const mysql = require("mysql2/promise");
 const inquirer = require("inquirer");
 const pswd = require("./pass.js").module;
+//const coreLogic = require("./utils/functions.js")
 let db;
 let departmentState;
 let managersState;
@@ -9,8 +10,7 @@ let rolesState;
 
 const main = async () => {
   // Initialization of loop
-  init();
-
+  await init();
   
   const options = [
     {
@@ -21,12 +21,17 @@ const main = async () => {
     },
   ];
 
-  const choice = await inquirer.prompt(options);
+  
 
-  await coreLogic[choice.command]();
+  while (true) {
+    const choice = await inquirer.prompt(options);
 
-  console.log('out of loop')
+    if (choice.command === 'Quit') break;
 
+    await coreLogic[choice.command]();
+
+  }
+  
   db.close();
 
   return;
@@ -56,7 +61,7 @@ const init = async () => {
 };
 
 const getDepartments = async () => {
-  let departmentResults = await db.query('SELECT id, name FROM roles;');
+  let departmentResults = await db.query('SELECT id, name FROM departments;');
   departmentState = departmentResults[0];
 }
 
@@ -68,7 +73,8 @@ const getRoles = async () => {
 const getManagers = async () => {
   let managerResults = await db.query(`SELECT DISTINCT m.id, CONCAT(m.first_name, ' ', m.last_name) as name FROM employees m JOIN employees e ON m.id = e.manager_id;`);
   managersState = managerResults[0];
-  managersState.unshift('No Manager');
+  console.log(managersState)
+  managersState.unshift({id:'NULL',name:'No Manager'});
 }
 
 const viewAll = async () => {
@@ -79,6 +85,31 @@ const viewAll = async () => {
     JOIN departments d ON d.id = r.department_id
     LEFT JOIN employees m ON e.manager_id = m.id
     ORDER BY e.id ASC;`;
+
+  const results = await db.query(query);
+
+  console.table(results[0]);
+};
+
+const viewAllRoles = async () => {
+  const query = `SELECT 
+  r.id, r.title, r.salary, d.name as department
+  FROM roles r
+  JOIN departments d
+  ON r.department_id = d.id
+  ORDER BY r.id ASC;`;
+
+  const results = await db.query(query);
+
+  console.table(results[0]);
+
+};
+
+const viewAllDepartments = async () => {
+  const query = `SELECT 
+    id, name as departments
+    FROM departments
+    ORDER BY id ASC;`;
 
   const results = await db.query(query);
 
@@ -118,7 +149,7 @@ const addEmployee = async () => {
 
   const manager_id = managersState.filter(manager => manager.name === response.manager)[0].id;
 
-  const insertQuery = `INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${role_id}','${manager_id}') `;
+  const insertQuery = `INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${role_id}',${manager_id}) `;
 
   db.query(insertQuery)
   
@@ -126,14 +157,11 @@ const addEmployee = async () => {
 
 const updateEmployee = async () => {
 
-  
-
   const questions = [
-
     {
       type: "input",
       name: "id",
-      message: "Select and employee ID",
+      message: "Select an employee ID",
     },
     {
       type: "input",
@@ -148,7 +176,7 @@ const updateEmployee = async () => {
     {
       type: "list",
       name: "title",
-      message: "Enter the employee's new role role",
+      message: "Enter the employee's new role",
       choices: rolesState.map(role => role.title)
     },
     {
@@ -161,28 +189,31 @@ const updateEmployee = async () => {
 
   const response = await inquirer.prompt(questions);
 
-  const role_id = rolesState.filter(role => role.title === response.title)[0].id;
+  if (!response.id) return;
 
-  const manager_id = managersState.filter(manager => manager.name === response.manager)[0].id;
+  const employeeQuery = await db.query(`SELECT * FROM employees WHERE id = ${response.id}`)
 
-  const insertQuery = `INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES ('${response.first}','${response.last}','${role_id}','${manager_id}') `;
+  const employee = employeeQuery[0];
 
-  db.query(insertQuery)
+  console.log(employee);
 
-};
+  if (employee) {
+    const role_id = rolesState.filter(role => role.title === response.title)[0].id;
 
-const viewAllRoles = async () => {
-  const query = `SELECT 
-  r.id, r.title, r.salary, d.name as department
-  FROM role r
-  JOIN departments d
-  ON r.department_id = d.id
-  ORDER BY r.id ASC;`;
-
-  const results = await db.query(query);
-
-  console.table(results[0]);
-
+    const manager_id = managersState.filter(manager => manager.name === response.manager)[0].id;
+  
+    const insertQuery = `UPDATE employees SET 
+    first_name = '${response.first || employee.first_name}',
+    last_name = '${response.first || employee.last_name}',
+    manager_id = '${manager_id}',
+    role_id = '${role_id || employee.role_id}',
+    WHERE id = '${response.id}';`;
+  
+    db.query(insertQuery)
+  } else {
+    console.log(`Employee ID ${response.id} not found.`);
+  }
+  return;
 };
 
 const addRole = async () => {
@@ -212,21 +243,12 @@ const addRole = async () => {
   const insertQuery = `INSERT INTO roles(title, salary, department_id) VALUES ('${response.title}','${response.salary}','${dept_id}');`;
 
   db.query(insertQuery);
-  
+
+  getRoles();
+  return;
 };
 
-const viewAllDepartments = async () => {
-  const query = `SELECT 
-    id, name as departments
-    FROM departments
-    ORDER BY id ASC;`;
-
-  const results = await db.query(query);
-
-  console.table(results[0]);
-};
-
-const addDepartment = () => {
+const addDepartment = async () => {
   const questions = [
     {
       type: "input",
@@ -239,17 +261,21 @@ const addDepartment = () => {
 
   const insertQuery = `INSERT INTO departments(name) VALUES ('${response.name}');`;
 
-  db.query(insertQuery)
+  db.query(insertQuery);
+
+  getDepartments();
+  return;
 };
 
 const coreLogic = {
   "View All Employees": viewAll,
+  "View All Roles": viewAllRoles,
+  "View All Departments": viewAllDepartments,
   "Add Employee": addEmployee,
   "Update Employee Role": updateEmployee,
-  "View All Roles": viewAllRoles,
   "Add Role": addRole,
-  "View All Departments": viewAllDepartments,
   "Add Department": addDepartment,
+  "Quit": "Quit"
 };
 
 main();
