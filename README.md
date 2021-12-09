@@ -4,7 +4,9 @@
 
 This command line interface allows users to view and edit employee data stored in a local MySQL database. This application is based in Node.js and uses the Inquirer and MySQL2 node packages.
 
-See a walkthrough video at: [Walkthrough]()
+See a walkthrough video at: [Walkthrough](https://watch.screencastify.com/v/fqAXGxM8vMajXQ54xVsI)
+
+![Application Screenshot](./final.png)
 
 ![License Badge](https://img.shields.io/badge/License-MIT-informational?logoColor=white&color=1CA2F1)
 
